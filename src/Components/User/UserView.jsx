@@ -480,15 +480,7 @@ value={`${data.bulkPermitNo},${'Rough stone'}(${quantity}MT),${travellingDate
       </div>
 
       {/* Image preview */}
-      {imageUrl && (
-        <div className="image-preview no-print">
-          <h3></h3>
-          <img src={imageUrl} alt="Converted document" style={{ maxWidth: '100%' }} />
-          <a href={imageUrl} download="document.png" className="download-link">
-            
-          </a>
-        </div>
-      )}
+     
     </div>
   );
 }
