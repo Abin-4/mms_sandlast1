@@ -314,7 +314,7 @@ try {
 {serialNumber && (
   <div style={{marginLeft:'19px',fontWeight:'1000', }}>
     <QRCodeSVG 
-value={`${data.bulkPermitNo},${'Rough stone'}(${data.quantity}MT),${travellingDate
+value={`${data.bulkPermitNo},${'Rough stone'}(${quantity}MT),${travellingDate
       ? new Date(travellingDate).toLocaleString('en-GB', {
           day: '2-digit',
           month: '2-digit',
