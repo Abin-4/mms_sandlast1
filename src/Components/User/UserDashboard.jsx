@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import './UserDashbord.css';
 import { FaFileAlt, FaTruck } from 'react-icons/fa';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { IoIosAddCircleOutline } from 'react-icons/io';
 
 function UserDashboard() {
     const navigate = useNavigate();
@@ -28,12 +29,25 @@ function UserDashboard() {
     setShowEpermit(false);
     navigate('/userlist', { 
       state: { 
-        userId: userData._id, 
+        userId: userData.id, 
+        lesseeId: userData.lesseeId 
+      } 
+    });
+  };
+  const handleDispatchEditClick = (e) => {
+    e.preventDefault();
+    setShowUserList(!showUserList);
+    setShowEpermit(false);
+    navigate('/useredit', { 
+      state: { 
+         userData,
         lesseeId: userData.lesseeId 
       } 
     });
   };
 
+
+  
   return (
     <div className="dashboard-container">
       {/* Sidebar */}
@@ -49,10 +63,11 @@ function UserDashboard() {
             <FaTruck className="icon-green" />
             <span>Dispatch List</span>
           </li>
-                    {/* <Link to={'/userview'}
-           style={{  color: '#333',  textDecoration: 'none',}}>
-          <li>  User View</li>
-          </Link> */}
+
+          <li onClick={handleDispatchEditClick}>
+            <IoIosAddCircleOutline className="icon-green" />
+            <span>Add</span>
+          </li>
 
         </ul>
       </aside>

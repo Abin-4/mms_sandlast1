@@ -27,6 +27,8 @@ import UserLast from './Components/User/UserLast';
 import Quaryyy from './Components/Quaryyy';
 import QueryLastData from './Components/QrCode/QueryLastData';
 import AllUsersData from './Components/User/AllUsersData';
+import UserEdits from './Components/User/UserEdit/UserEdits';
+import UserView2 from './Components/User/UserView2';
 
 
 function App() {
@@ -61,6 +63,8 @@ function App() {
       <Route path='/qu' element={<Quaryyy/>  }  />
       <Route path='/q' element={<QueryLastData/>  }  />
       <Route path='/alluser' element={<AllUsersData/>  }  />
+      <Route path='/useredit' element={<UserEdits/>  }  />
+      <Route path='/userview2' element={<UserView2/>  }  />
 
       {/* <Route path="/vehicle-manag/:id" element={<VehicleForm />} /> */}
 

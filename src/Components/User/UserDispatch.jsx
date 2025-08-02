@@ -113,14 +113,40 @@ const purchaserAddress = formData.purchaserAddress
     }
   }, [formData.totalDistance, formData.travellingDate]);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-  const handleSubmit = async (e) => {
+const handleChange = (e) => {
+  const { name, value } = e.target;
+  
+  // List of fields that should be uppercase
+  const uppercaseFields = [
+    'driverName',
+    'vehicleNo',
+    'purchaserName',
+    'purchaserAddress'
+  ];
+
+  let processedValue = uppercaseFields.includes(name) 
+    ? value.toUpperCase() 
+    : value;
+
+  // Special formatting for vehicle number
+  if (name === 'vehicleNo') {
+    // Remove all existing spaces first to avoid double spaces
+    const cleanValue = value.replace(/\s/g, '');
+    // Add space after 4 characters if length > 4
+    processedValue = cleanValue.length > 4 
+      ? `${cleanValue.substring(0, 4)} ${cleanValue.substring(4)}` 
+      : cleanValue;
+    // Limit to 9 characters (4 letters + space + 4 numbers)
+    processedValue = processedValue.substring(0, 15);
+  }
+
+  setFormData(prev => ({
+    ...prev,
+    [name]: processedValue,
+  }));
+};
+
+const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!userDetails) {
@@ -220,7 +246,9 @@ navigate('/userview', {
 
           <div>
             <label>Vehicle No:</label>
-            <input type="text" name="vehicleNo" value={formData.vehicleNo} onChange={handleChange} className="input" />
+            <input type="text" name="vehicleNo" value={formData.vehicleNo} onChange={handleChange} className="input" 
+            maxLength={15} />
+            
           </div>
 
 

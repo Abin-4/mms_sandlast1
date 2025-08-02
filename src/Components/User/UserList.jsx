@@ -5,13 +5,11 @@ import { deleteQueryAPI, queryGetAPI } from '../../Server/allAPI';
 
 function UserList() {
   const location = useLocation();
-  const { lesseeId } = location.state || {};
-  console.log("Current lesseeId:", lesseeId);
+  const { lesseeId,userId } = location.state || {};
+  console.log(userId);
   
   const [queries, setQueries] = useState([]);
   const [filteredQueries, setFilteredQueries] = useState([]);
-  const [isEditing, setIsEditing] = useState(false);
-  const [editedData, setEditedData] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -22,21 +20,16 @@ function UserList() {
   }, []);
 
   useEffect(() => {
-    // First filter by lesseeId, then by search term
-    let results = queries;
+    let results = [...queries];
     
-    // Filter by lesseeId if it exists
     if (lesseeId) {
-      results = results.filter(query => 
-        query.lesseeId === lesseeId
-      );
+      results = results.filter(query => query.lesseeId === lesseeId);
     }
     
-    // Then apply search filter if search term exists
     if (searchTerm) {
       results = results.filter(query => 
-        (query.SerialNo && query.SerialNo.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (query.dispatchNo && query.dispatchNo.toLowerCase().includes(searchTerm.toLowerCase()))
+        (query.SerialNo?.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (query.dispatchNo?.toLowerCase().includes(searchTerm.toLowerCase()))
       );
     }
     
@@ -47,10 +40,23 @@ function UserList() {
     try {
       setLoading(true);
       const response = await queryGetAPI();
-      console.log("API Response:", response);
       
       if (response.data && Array.isArray(response.data)) {
-        setQueries(response.data);
+        // Safe sorting with fallback for missing dates
+        const sortedData = response.data.sort((a, b) => {
+          // Get valid dates or fallback to current date
+          const getValidDate = (obj) => {
+            if (obj?.createdAt) return new Date(obj.createdAt);
+            if (obj?.updatedAt) return new Date(obj.updatedAt);
+            return new Date(); // Fallback to current date
+          };
+          
+          const dateA = getValidDate(a);
+          const dateB = getValidDate(b);
+          return dateB - dateA; // Newest first
+        });
+        
+        setQueries(sortedData);
       } else {
         throw new Error("No data received or data is not in expected format");
       }
@@ -62,55 +68,48 @@ function UserList() {
     }
   };
 
-  const handleInputChange = (id, field, value) => {
-    setEditedData(prev => ({
-      ...prev,
-      [id]: {
-        ...(prev[id] || {}),
-        [field]: value,
-      }
-    }));
-  };
-
   const handleView = (query) => {
-    navigate(`/lastuser/${query._id}`, { state: { lesseeId } });
-  };
-
-  const handleAddNew = () => {
-    navigate('/userdispatch', { state: { lesseeId } });
-  };
-
-  const handleRefresh = () => {
-    fetchAllQueries();
-  };
-
-  const handleDelete = async (id) => {
-    try {
-      if (window.confirm("Are you sure you want to delete this record?")) {
-        await deleteQueryAPI(id);
-        fetchAllQueries();
+    navigate(`/lastuser/${query._id}`,{
+      state:{
+        userId
       }
-    } catch (err) {
-      console.error("Failed to delete query:", err);
-      setError("Failed to delete record. Please try again.");
-    }
+    });
   };
 
-  const renderCell = (query, field) => {
-    if (isEditing === query._id) {
-      return (
-        <input
-          type="text"
-          value={editedData[query._id]?.[field] || ''}
-          onChange={(e) => handleInputChange(query._id, field, e.target.value)}
-        />
-      );
-    }
-    return query[field] || 'N/A';
-  };
 
+const handleDelete = async (id) => {
+  try {
+    if (window.confirm("Are you sure you want to delete this record?")) {
+      // Optimistic update - remove from UI immediately
+      setQueries(prev => prev.filter(query => query._id !== id));
+      setFilteredQueries(prev => prev.filter(query => query._id !== id));
+      
+      await deleteQueryAPI(id);
+      // No need to refresh all data, we already updated UI
+    }
+  } catch (err) {
+    console.error("Failed to delete query:", err);
+    setError("Failed to delete record. Please try again.");
+    // Revert UI if API call fails
+    fetchAllQueries();
+  }
+};
+
+const handleRefresh = async () => {
+  try {
+    setLoading(true);
+    await fetchAllQueries();
+  } finally {
+    setLoading(false);
+  }
+};
   if (loading) {
-    return <div>Loading...</div>;
+    return (
+      <div className="loading-container">
+        <div className="loading-spinner"></div>
+        <p>Loading dispatch records...</p>
+      </div>
+    );
   }
 
   if (error) {
@@ -119,56 +118,70 @@ function UserList() {
 
   return (
     <div className="user-list-container">
-      <h2>All Dispatch Entries {lesseeId ? `for Lessee ID: ${lesseeId}` : ''}</h2>
+      <h2>All Dispatch Entries {`lesseeId ? for Lessee ID: ${lesseeId} : ''`}</h2>
 
-      <div className="header-section">
-        <div className="search-bar">
+      <div className="controls-section">
+        <div className="search-control">
           <input
             type="text"
-            placeholder="Search"
+            placeholder="Search by Serial No or Dispatch No"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            className="search-input"
           />
         </div>
 
-        <div className="button-group">
-          <button onClick={handleAddNew} className="action-btn add-btn">
-            Add 
-          </button>
-          <button onClick={handleRefresh} className="action-btn refresh-btn">
+        <div className="action-buttons">
+          
+          <button style={{width:'100px'}} onClick={handleRefresh} className="btn btn-secondary">
             Refresh
           </button>
         </div>
       </div>
 
       {filteredQueries.length === 0 ? (
-        <p>No dispatch records found{lesseeId ? ` for Lessee ID: ${lesseeId}` : ''}.</p>
+        <div className="no-results">
+          <p>No dispatch records found{lesseeId ? ` for Lessee ID: ${lesseeId}` : ''}.</p>
+        </div>
       ) : (
-        <div className="table-wrapper">
+        <div className="table-responsive">
           <table className="dispatch-table">
             <thead>
               <tr>
-                <th>Permit Number</th>
-                <th>Dispatch Number</th>
-                <th>MineCode</th>
-                <th>Security Paper Number</th>
-                <th>Mineral</th>
-                <th>Action</th>
+                <th>Created At</th>
+                <th>Permit No</th>
+                <th>Security Paper No</th>
+                <th>vehicle no</th>
+                                <th>Mineral</th>
+
+                <th>name</th>
+                <th>address</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
               {filteredQueries.map(query => (
                 <tr key={query._id}>
-                  <td>{renderCell(query, 'bulkPermitNo')}</td>
-                  <td>{`DISP${query.dispatchNo}`}</td>
-                  <td>{renderCell(query, 'minecode')}</td>
-                  <td>{`TN00${query.SerialNo}`}</td>
-                  <td>{renderCell(query, 'mineralName')}</td>
-                  <td className='action-butt'>
-                    <button onClick={() => handleView(query)}>View</button>
+                  <td>
+                    {query.createdAt ? new Date(query.createdAt).toLocaleString() : 'N/A'}
+                  </td>
+                  <td>{query.bulkPermitNo || 'N/A'}</td>
+                  <td>{query.SerialNo ? `TN00${query.SerialNo}` : 'N/A'}</td>
+                  <td>{query.vehicleNo || 'N/A'}</td>
+                  <td>{query.mineralName || 'N/A'}</td>
+                                    <td>{query.purchaserName || 'N/A'}</td>
+                  <td>{query.purchaserAddress || 'N/A'}</td>
+                  <td></td>
+                  <td className="action-buttons-cell">
+                    <button 
+                      onClick={() => handleView(query)} 
+                      className="btn btn-view"
+                    >
+                      View
+                    </button>
                     <button
                       onClick={() => handleDelete(query._id)}
-                      className="delete-btn"
+                      className="btn btn-delete"
                     >
                       Delete
                     </button>

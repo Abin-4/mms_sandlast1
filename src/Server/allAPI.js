@@ -70,7 +70,13 @@ export const deleteAllQueriesAPI = async () => {
 export const querySingleGetAPI = async (id) => {
   return await commonAPI("GET", `${SERVER_URL}/queryget/${id}`);
 };
+export const updateQueryDataAPI = async (id, data) => {
+  return await commonAPI("put", `${SERVER_URL}/updateQueryData/${id}`, data);
+};
 
+export const updateCounterAPI = async (id, countStart) => { 
+  return await commonAPI("put", `${SERVER_URL}/updateCounter/${id}`, { countStart });
+};
 
 
 
